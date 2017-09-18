@@ -1,0 +1,9 @@
+{
+	"name": "saschaegerer/arc-phpstan",
+	"description": "PHPStan for Arcanist - Arcanist integration for PHP Static Analysis",
+	"license": ["MIT"],
+	"prefer-stable": true,
+	"require": {
+		"phpstan/phpstan": "^0.8"
+	}
+}
