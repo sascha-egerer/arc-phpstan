@@ -27,7 +27,7 @@ call parent constructor from AppBundle\Bar.
 ```
 ## Installation
 
-phpstan is required. Please follow [official instructions](https://github.com/phpstan/phpstan#installation) to install it.
+phpstan is required. Run `composer install` to install it.
 
 ### Project-specific installation
 

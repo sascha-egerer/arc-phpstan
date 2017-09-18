@@ -56,7 +56,7 @@ final class PhpstanLinter extends ArcanistExternalLinter
 
     public function getDefaultBinary()
     {
-        return 'phpstan';
+        return './vendor/bin/phpstan';
     }
 
     public function getInstallInstructions()
