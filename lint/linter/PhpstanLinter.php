@@ -56,12 +56,12 @@ final class PhpstanLinter extends ArcanistExternalLinter
 
     public function getDefaultBinary()
     {
-        return './vendor/bin/phpstan';
+        return 'vendor/bin/phpstan';
     }
 
     public function getInstallInstructions()
     {
-        return pht('Install phpstan following the official guide at https://github.com/phpstan/phpstan#installation');
+        return pht('Run "composer require phpstan/phpstan". Configure the path to the binary in your linter setting');
     }
 
     public function shouldExpectCommandErrors()
