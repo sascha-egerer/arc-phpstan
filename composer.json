@@ -4,6 +4,6 @@
 	"license": ["MIT"],
 	"prefer-stable": true,
 	"require": {
-		"phpstan/phpstan": "^0.8"
+		"phpstan/phpstan": "~0.8"
 	}
 }
