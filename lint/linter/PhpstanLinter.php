@@ -25,9 +25,9 @@ final class PhpstanLinter extends ArcanistExternalLinter
     private $configFile = null;
 
     /**
-     * @var int Rule level
+     * @var string Rule level
      */
-    private $level = null;
+    private $level = 'max';
 
     public function getInfoName()
     {
@@ -92,7 +92,7 @@ final class PhpstanLinter extends ArcanistExternalLinter
         $flags = array(
             'analyse',
             '--no-progress',
-            '--errorFormat=raw'
+            '--errorFormat=checkstyle'
         );
         if (null !== $this->configFile) {
             array_push($flags, '-c', $this->configFile);
@@ -110,12 +110,14 @@ final class PhpstanLinter extends ArcanistExternalLinter
             'config' => array(
                 'type' => 'optional string',
                 'help' => pht(
-                    'The path to your phpstan.neon file. Will be provided as -c <path> to phpstan.'),
+                    'The path to your phpstan.neon file. Will be provided as -c <path> to phpstan.'
+                ),
             ),
             'level' => array(
                 'type' => 'optional int',
                 'help' => pht(
-                    'Rule level used (0 loosest - 7 strictest). Will be provided as -l <level> to phpstan.'),
+                    'Rule level used (0 loosest - max strictest). Will be provided as -l <level> to phpstan.'
+                ),
             ),
         );
         return $options + parent::getLinterConfigurationOptions();
@@ -139,26 +141,80 @@ final class PhpstanLinter extends ArcanistExternalLinter
     protected function parseLinterOutput($path, $err, $stdout, $stderr)
     {
         $result = array();
-        if (null !== $stdout && '' !== $stdout) {
-            preg_match_all('/[a-zA-Z\/.]+:[0-99999]+:[a-zA-Z\/:_#\'()= \\\\$.0-99999\[\]]+/m', $stdout, $messages);
-            foreach ($messages[0] as $warning) {
-                $message = id(new ArcanistLintMessage())
-                    ->setPath($path)
-                    ->setName('phpstan violation')
-                    ->setCode('phpstan')
-                    ->setSeverity(ArcanistLintSeverity::SEVERITY_DISABLED);
-                $fileEnd = strpos($warning, ':');
-                $lineIni = strpos($warning, ':', $fileEnd) + 1;
-                $lineEnd = strpos($warning, ':', $lineIni) + 1;
-                $line = substr($warning, $lineIni, $lineEnd - $lineIni);
-                $error = substr($warning, $lineEnd);
-                $message->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR);
-                $message->setLine((int)$line)
-                    ->setDescription("Error: $error");
-                $result[] = $message;
+        if (!empty($stdout)) {
+            $checkstyleOutpout = new SimpleXMLElement($stdout);
+
+            $errors = $checkstyleOutpout->xpath('//file/error');
+            foreach($errors as $error) {
+                $violation = $this->parseViolation($error);
+                $violation['path'] = $path;
+                $result[] = ArcanistLintMessage::newFromDictionary($violation);
             }
         }
 
         return $result;
+    }
+
+    /**
+     * Checkstyle returns output of the form
+     *
+     * <checkstyle>
+     *   <file name="${sPath}">
+     *     <error line="12" column="10" severity="${sSeverity}" message="${sMessage}" source="${sSource}">
+     *     ...
+     *   </file>
+     * </checkstyle>
+     *
+     * Of this, we need to extract
+     *   - Line
+     *   - Column
+     *   - Severity
+     *   - Message
+     *   - Source (name)
+     *
+     * @param SimpleXMLElement $oXml The XML Entity containing the issue
+     * @return array of the form
+     * [
+     *   'line' => {int},
+     *   'column' => {int},
+     *   'severity' => {string},
+     *   'message' => {string}
+     * ]
+     */
+    private function parseViolation(SimpleXMLElement $violation)
+    {
+        return array(
+            'code' => $this->getLinterName(),
+            'name' => (string)$violation['message'],
+            'line' => (int)$violation['line'],
+            'char' => (int)$violation['column'],
+            'severity' => $this->getMatchSeverity((string)$violation['severity']),
+            'description' => (string)$violation['message']
+        );
+    }
+
+    /**
+     * Map the regex matching groups to a message severity. We look for either
+     * a nonempty severity name group like 'error', or a group called 'severity'
+     * with a valid name.
+     *
+     * @param string $severity_name dict Captured groups from regex.
+     * @return string @{class:ArcanistLintSeverity} constant.
+     *
+     * @task parse
+     */
+    private function getMatchSeverity($severity_name)
+    {
+        $map = array(
+            'error' => ArcanistLintSeverity::SEVERITY_ERROR,
+            'warning' => ArcanistLintSeverity::SEVERITY_WARNING,
+            'info' => ArcanistLintSeverity::SEVERITY_ADVICE,
+        );
+        foreach ($map as $name => $severity) {
+            if ($severity_name == $name) {
+                return $severity;
+            }
+        }
+        return ArcanistLintSeverity::SEVERITY_ERROR;
     }
 }
