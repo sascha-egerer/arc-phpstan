@@ -1,8 +1,19 @@
 {
   "name": "saschaegerer/arc-phpstan",
   "description": "PHPStan for Arcanist - Arcanist integration for PHP Static Analysis",
-  "license": [
-    "MIT"
+  "license": "Apache-2.0",
+  "authors": [
+    {
+      "name": "Carles Mata",
+      "email": "info@appsinet.com",
+      "homepage": "http://appsinet.com",
+      "role": "Developer"
+    },
+    {
+      "name": "Sascha Egerer",
+      "email": "info@sascha-egerer.de",
+      "role": "Developer"
+    }
   ],
   "prefer-stable": true,
   "require": {
