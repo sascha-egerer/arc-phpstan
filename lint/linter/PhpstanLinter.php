@@ -18,6 +18,10 @@
 /** Uses phpstan to lint php files */
 final class PhpstanLinter extends ArcanistExternalLinter
 {
+    /**
+     * @var string Autoload file path
+     */
+    private $autoloadFile = null;
 
     /**
      * @var string Config file path
@@ -100,6 +104,9 @@ final class PhpstanLinter extends ArcanistExternalLinter
         if (null !== $this->level) {
             array_push($flags, '-l', $this->level);
         }
+        if (null !== $this->autoloadFile) {
+            array_push($flags, '-a', $this->autoloadFile);
+        }
 
         return $flags;
     }
@@ -119,6 +126,12 @@ final class PhpstanLinter extends ArcanistExternalLinter
                     'Rule level used (0 loosest - max strictest). Will be provided as -l <level> to phpstan.'
                 ),
             ),
+            'autoload' => array(
+                'type' => 'optional string',
+                'help' => pht(
+                    'The path to the autoload file. Will be provided as -a <path> to phpstan.'
+                ),
+            ),
         );
         return $options + parent::getLinterConfigurationOptions();
     }
@@ -126,15 +139,18 @@ final class PhpstanLinter extends ArcanistExternalLinter
     public function setLinterConfigurationValue($key, $value)
     {
         switch ($key) {
-        case 'config':
-            $this->configFile = $value;
-            return;
-        case 'level':
-            $this->level = $value;
-            return;
-        default:
-            parent::setLinterConfigurationValue($key, $value);
-            return;
+            case 'autoload':
+                $this->autoloadFile = $value;
+                return;
+            case 'config':
+                $this->configFile = $value;
+                return;
+            case 'level':
+                $this->level = $value;
+                return;
+            default:
+                parent::setLinterConfigurationValue($key, $value);
+                return;
         }
     }
 
