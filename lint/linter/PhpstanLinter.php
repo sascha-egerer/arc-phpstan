@@ -161,10 +161,12 @@ final class PhpstanLinter extends ArcanistExternalLinter
     {
         $result = array();
         if (!empty($stdout)) {
+            // Remove output that comes before the xml document starts
+            $stdout = substr($stdout, strpos($stdout, '<?xml'));
             $checkstyleOutpout = new SimpleXMLElement($stdout);
 
             $errors = $checkstyleOutpout->xpath('//file/error');
-            foreach($errors as $error) {
+            foreach ($errors as $error) {
                 $violation = $this->parseViolation($error);
                 $violation['path'] = $path;
                 $result[] = ArcanistLintMessage::newFromDictionary($violation);
@@ -191,7 +193,7 @@ final class PhpstanLinter extends ArcanistExternalLinter
      *   - Message
      *   - Source (name)
      *
-     * @param SimpleXMLElement $oXml The XML Entity containing the issue
+     * @param SimpleXMLElement $violation The XML Entity containing the issue
      * @return array of the form
      * [
      *   'line' => {int},
