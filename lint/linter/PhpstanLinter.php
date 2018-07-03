@@ -207,7 +207,7 @@ final class PhpstanLinter extends ArcanistExternalLinter
         return array(
             'code' => $this->getLinterName(),
             'name' => (string)$violation['message'],
-            'line' => (int)$violation['line'],
+            'line' => max((int)$violation['line'], 1),
             'char' => (int)$violation['column'],
             'severity' => $this->getMatchSeverity((string)$violation['severity']),
             'description' => (string)$violation['message']
