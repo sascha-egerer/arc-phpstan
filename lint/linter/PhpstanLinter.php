@@ -161,15 +161,51 @@ final class PhpstanLinter extends ArcanistExternalLinter
     {
         $result = array();
         if (!empty($stdout)) {
-            // Remove output that comes before the xml document starts
-            $stdout = substr($stdout, strpos($stdout, '<?xml'));
-            $checkstyleOutpout = new SimpleXMLElement($stdout);
+            try {
+                preg_match(
+                    '/(?P<before>.*)(?P<data>\<\?xml.*<\/checkstyle>)(?P<after>.*)/s',
+                    $stdout,
+                    $matches
+                );
+                if (!empty($matches['before'])) {
+                    ArcanistLintMessage::newFromDictionary(
+                        array(
+                            'code' => $this->getLinterName(),
+                            'name' => 'Unexpected output before lint results',
+                            'line' => 1,
+                            'char' => 1,
+                            'severity' => ArcanistLintSeverity::SEVERITY_ADVICE,
+                            'description' => (string)$matches['before'],
+                            'path' => $path
+                        )
+                    );
+                }
+                if (!empty($matches['data'])) {
+                    // Remove output that comes before the xml document starts
+                    $checkstyleOutpout = new SimpleXMLElement($matches['data']);
 
-            $errors = $checkstyleOutpout->xpath('//file/error');
-            foreach ($errors as $error) {
-                $violation = $this->parseViolation($error);
-                $violation['path'] = $path;
-                $result[] = ArcanistLintMessage::newFromDictionary($violation);
+                    $errors = $checkstyleOutpout->xpath('//file/error');
+                    foreach ($errors as $error) {
+                        $violation = $this->parseViolation($error);
+                        $violation['path'] = $path;
+                        $result[] = ArcanistLintMessage::newFromDictionary($violation);
+                    }
+                }
+                if (!empty($matches['after'])) {
+                    ArcanistLintMessage::newFromDictionary(
+                        array(
+                            'code' => $this->getLinterName(),
+                            'name' => 'Unexpected output after lint results',
+                            'line' => 1,
+                            'char' => 1,
+                            'severity' => ArcanistLintSeverity::SEVERITY_ADVICE,
+                            'description' => (string)$matches['after'],
+                            'path' => $path
+                        )
+                    );
+                }
+            } catch (Exception $e) {
+                return false;
             }
         }
 
